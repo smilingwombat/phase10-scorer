@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b2d6e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Phase 10 Scorekeeper</title>
+<style>
+  :root {
+    --bg: #f2f3f8;
+    --card: #ffffff;
+    --ink: #1d1f2b;
+    --muted: #6a6f82;
+    --line: #dfe1ea;
+    --accent: #2b2d6e;
+    --accent-ink: #ffffff;
+    --ok: #1e9e5a;
+    --ok-soft: #e2f6ea;
+    --hi: #e8a400;
+    --hi-soft: #fff3d1;
+    --danger: #c0392b;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13141b;
+      --card: #1d1f29;
+      --ink: #eceef5;
+      --muted: #9ba0b2;
+      --line: #2e3140;
+      --accent: #8f94ff;
+      --accent-ink: #13141b;
+      --ok: #3ccf82;
+      --ok-soft: #1b3328;
+      --hi: #f2c14e;
+      --hi-soft: #3a3220;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
+  }
+  main { max-width: 560px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0 8px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  h1 .badge { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; margin-right: 8px;
+    background: linear-gradient(135deg, #e74c3c 0 25%, #f1c40f 25% 50%, #27ae60 50% 75%, #2e86de 75%); color: #fff;
+    font-size: 14px; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,.5); vertical-align: middle; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 12px 0; }
+  .hidden { display: none !important; }
+  button {
+    font: inherit; border: 0; border-radius: 12px; padding: 14px 16px; cursor: pointer;
+    background: var(--accent); color: var(--accent-ink); font-weight: 600; min-height: 48px;
+  }
+  button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+  button.small { padding: 8px 12px; min-height: 36px; font-size: 14px; }
+  button:disabled { opacity: .4; cursor: default; }
+  .full { width: 100%; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .stack > * + * { margin-top: 10px; }
+  .grow { flex: 1; min-width: 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  input[type=text], input[type=number] {
+    font: inherit; width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-height: 48px;
+  }
+  input[type=number] { font-size: 22px; font-weight: 700; text-align: center; }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .made-toggle {
+    display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 12px; white-space: nowrap;
+    border: 1px solid var(--line); cursor: pointer; user-select: none; min-height: 48px; font-weight: 600; font-size: 14px;
+  }
+  .made-toggle input { width: 22px; height: 22px; accent-color: var(--ok); margin: 0; }
+  .made-toggle.on { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+
+  /* Hand entry */
+  .entry { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .entry:last-of-type { border-bottom: 0; }
+  .entry .who { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .entry .who strong { font-size: 18px; }
+  .phase-tag { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--bg); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+  .phase-desc { font-size: 13px; color: var(--muted); margin: -4px 0 8px; }
+  .quick { display: flex; gap: 6px; margin-top: 8px; }
+  .quick button { flex: 1; min-height: 38px; padding: 6px 0; font-size: 14px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+  .quick button small { display: block; font-size: 10px; font-weight: 400; color: var(--muted); }
+
+  /* Chips */
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  .chip { flex: 1 0 auto; min-width: 84px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; text-align: center; }
+  .chip .n { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+  .chip .p { font-size: 12px; font-weight: 700; color: var(--accent); }
+  .chip .s { font-size: 20px; font-weight: 700; }
+  .chip.done { border-color: var(--ok); box-shadow: 0 0 0 2px var(--ok) inset; }
+
+  /* Scorecard */
+  .table-wrap { overflow-x: auto; margin: 0 -4px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  td.r { color: var(--muted); font-size: 13px; width: 28px; }
+  tfoot td { font-weight: 800; border-bottom: 0; padding-top: 10px; }
+  .score-btn {
+    width: 100%; min-height: 48px; padding: 4px 6px; border-radius: 10px;
+    background: var(--bg); color: var(--ink); border: 1px dashed var(--line);
+    font-weight: 600; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  }
+  .score-btn .pts::after { content: " ✎"; font-size: 11px; color: var(--muted); font-weight: 400; }
+  .score-btn .ph { font-size: 11px; font-weight: 600; color: var(--muted); }
+  .score-btn.made { background: var(--ok-soft); border-color: var(--ok); }
+  .score-btn.made .ph { color: var(--ok); }
+  .score-btn:active { border-style: solid; border-color: var(--accent); }
+  .score-btn.flash { animation: flash 1s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 3px var(--hi); } to { box-shadow: 0 0 0 0 transparent; } }
+  .hint { text-align: center; margin: 8px 0 0; }
+
+  .banner { background: var(--hi-soft); border: 1px solid var(--hi); border-radius: var(--radius); padding: 12px 16px; margin: 12px 0; font-weight: 600; }
+
+  /* Results */
+  .standing { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .standing:last-child { border-bottom: 0; }
+  .place { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--bg); flex: none; }
+  .standing.first .place { background: var(--hi); color: #1d1f2b; }
+  .standing .pts { font-size: 24px; font-weight: 800; text-align: right; }
+  .standing .pts small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+
+  /* Phase list */
+  details summary { cursor: pointer; font-weight: 600; }
+  ol.phases { margin: 10px 0 0; padding-left: 22px; font-size: 14px; }
+  ol.phases li { padding: 2px 0; }
+
+  dialog { border: 0; border-radius: var(--radius); padding: 20px; width: min(92vw, 400px); background: var(--card); color: var(--ink); }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span class="badge">10</span>Phase 10 Score</h1>
+    <button id="newGameBtn" class="secondary small hidden">New game</button>
+  </header>
+
+  <!-- SETUP -->
+  <section id="setup">
+    <div class="card stack">
+      <h2>Players</h2>
+      <div id="playerInputs" class="stack"></div>
+      <button id="addPlayerBtn" class="secondary full">+ Add player</button>
+    </div>
+    <button id="startBtn" class="full">Start game</button>
+    <div class="card">
+      <details>
+        <summary>Phases &amp; scoring</summary>
+        <ol class="phases" id="phaseList"></ol>
+        <p class="muted">Cards left in hand at the end of each hand: 1–9 = 5 pts, 10–12 = 10 pts, Skip = 15 pts, Wild = 25 pts. Lowest score wins among players who finish the highest phase.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="hidden">
+    <div id="chips" class="chips"></div>
+    <div id="gameOverBanner" class="banner hidden"></div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:4px">
+        <h2 class="grow" id="handLabel" style="margin:0">Hand 1</h2>
+        <button id="undoBtn" class="secondary small" disabled>Undo hand</button>
+      </div>
+      <p class="muted" style="margin:0">Enter each player's leftover-card points (0 for whoever went out) and tick if they made their phase.</p>
+      <div id="entries"></div>
+      <button id="saveHandBtn" class="full">Save hand</button>
+    </div>
+
+    <div class="card">
+      <h2>Scorecard</h2>
+      <div class="table-wrap"><table id="table"></table></div>
+      <p class="muted hint" id="tableHint">✎ Tap any score to fix it — totals and phases update automatically.</p>
+    </div>
+
+    <button id="totalBtn" class="full">Calculate total score</button>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results" class="hidden">
+    <div class="card">
+      <h2>Final standings</h2>
+      <div id="standings"></div>
+    </div>
+    <div class="card">
+      <h2>Scorecard</h2>
+      <div class="table-wrap"><table id="resultsTable"></table></div>
+      <p class="muted hint">✎ Spotted a mistake? Tap any score to fix it — the standings update.</p>
+    </div>
+    <div class="row">
+      <button id="backBtn" class="secondary grow">Back to game</button>
+      <button id="newGameBtn2" class="grow">New game</button>
+    </div>
+  </section>
+</main>
+
+<!-- EDIT DIALOG -->
+<dialog id="editDialog">
+  <form method="dialog" class="stack" id="editForm">
+    <h2 id="editTitle" style="margin:0">Edit</h2>
+    <input type="number" id="editScore" inputmode="numeric" pattern="[0-9]*" min="0" aria-label="Points">
+    <label class="made-toggle" id="editMadeLabel"><input type="checkbox" id="editMade"> Made phase <span id="editPhaseNum"></span></label>
+    <div class="row">
+      <button type="button" class="secondary grow" id="editCancel">Cancel</button>
+      <button type="submit" class="grow" id="editSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const KEY = 'phase10-scorer-v1';
+  const PHASES = [
+    '2 sets of 3',
+    '1 set of 3 + 1 run of 4',
+    '1 set of 4 + 1 run of 4',
+    '1 run of 7',
+    '1 run of 8',
+    '1 run of 9',
+    '2 sets of 4',
+    '7 cards of one color',
+    '1 set of 5 + 1 set of 2',
+    '1 set of 5 + 1 set of 3',
+  ];
+  const QUICK = [[5, '1–9'], [10, '10–12'], [15, 'Skip'], [25, 'Wild']];
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let state = load() || freshState();
+  let editing = null; // { h, p }
+
+  function freshState() { return { phase: 'setup', players: ['', ''], hands: [] }; }
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+
+  $('phaseList').innerHTML = PHASES.map(p => `<li>${p}</li>`).join('');
+
+  // Each hand: array (per player) of { pts, made }.
+  // A player's phase going into hand h = 1 + phases completed in hands before h.
+  function stats(uptoHand = state.hands.length) {
+    return state.players.map((_, p) => {
+      let pts = 0, done = 0;
+      for (let h = 0; h < uptoHand; h++) {
+        const e = state.hands[h][p];
+        pts += e.pts;
+        if (e.made && done < 10) done++;
+      }
+      return { pts, done };
+    });
+  }
+  const phaseLabel = done => done >= 10 ? 'Finished' : `Phase ${done + 1}`;
+
+  // ---------- Setup ----------
+  function renderSetup() {
+    const wrap = $('playerInputs');
+    wrap.innerHTML = '';
+    state.players.forEach((name, i) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<input type="text" placeholder="Player ${i + 1}" value="${esc(name)}" aria-label="Player ${i + 1} name" autocomplete="off">` +
+        (state.players.length > 1 ? `<button class="danger small" aria-label="Remove player">✕</button>` : '');
+      row.querySelector('input').addEventListener('input', e => { state.players[i] = e.target.value; save(); });
+      const rm = row.querySelector('button');
+      if (rm) rm.addEventListener('click', () => { state.players.splice(i, 1); save(); renderSetup(); });
+      wrap.appendChild(row);
+    });
+    $('addPlayerBtn').disabled = state.players.length >= 6;
+  }
+  $('addPlayerBtn').onclick = () => { state.players.push(''); save(); renderSetup(); };
+  $('startBtn').onclick = () => {
+    state.players = state.players.map((p, i) => p.trim() || `Player ${i + 1}`);
+    state.hands = [];
+    state.phase = 'game';
+    save(); render();
+  };
+
+  // ---------- Game ----------
+  function renderGame() {
+    const st = stats();
+    $('chips').innerHTML = state.players.map((p, i) =>
+      `<div class="chip ${st[i].done >= 10 ? 'done' : ''}"><div class="n">${esc(p)}</div><div class="p">${phaseLabel(st[i].done)}</div><div class="s">${st[i].pts}</div></div>`).join('');
+
+    const finishers = state.players.filter((_, i) => st[i].done >= 10);
+    $('gameOverBanner').classList.toggle('hidden', !finishers.length);
+    $('gameOverBanner').textContent = finishers.length
+      ? `🎉 ${finishers.join(' & ')} completed Phase 10! Tap “Calculate total score” to see the winner.` : '';
+
+    $('handLabel').textContent = `Hand ${state.hands.length + 1}`;
+    $('undoBtn').disabled = !state.hands.length;
+
+    $('entries').innerHTML = state.players.map((p, i) => {
+      const done = st[i].done;
+      return `<div class="entry" data-p="${i}">
+        <div class="who"><strong>${esc(p)}</strong><span class="phase-tag">${phaseLabel(done)}</span></div>
+        ${done < 10 ? `<div class="phase-desc">${PHASES[done]}</div>` : ''}
+        <div class="row">
+          <input type="number" class="pts-in grow" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="0" aria-label="${esc(p)} points">
+          <label class="made-toggle"><input type="checkbox" class="made-in" ${done >= 10 ? 'disabled' : ''}> Made it</label>
+        </div>
+        <div class="quick">${QUICK.map(([v, l]) => `<button type="button" data-add="${v}">+${v}<small>${l}</small></button>`).join('')}
+          <button type="button" data-add="clear">Clear<small>&nbsp;</small></button></div>
+      </div>`;
+    }).join('');
+
+    $('entries').querySelectorAll('.entry').forEach(el => {
+      const input = el.querySelector('.pts-in');
+      el.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+        input.value = b.dataset.add === 'clear' ? '' : (parseInt(input.value, 10) || 0) + +b.dataset.add;
+      });
+      const cb = el.querySelector('.made-in');
+      cb.onchange = () => cb.parentElement.classList.toggle('on', cb.checked);
+    });
+
+    renderTable($('table'));
+    $('tableHint').classList.toggle('hidden', !state.hands.length);
+  }
+
+  $('saveHandBtn').onclick = () => {
+    const entries = [...$('entries').querySelectorAll('.entry')];
+    const hand = [];
+    for (const el of entries) {
+      const raw = el.querySelector('.pts-in').value.trim();
+      const pts = raw === '' ? 0 : parseInt(raw, 10);
+      if (isNaN(pts) || pts < 0) { el.querySelector('.pts-in').focus(); return; }
+      hand.push({ pts, made: el.querySelector('.made-in').checked });
+    }
+    state.hands.push(hand);
+    save(); renderGame();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  $('undoBtn').onclick = () => {
+    if (!state.hands.length) return;
+    if (!confirm(`Remove hand ${state.hands.length}?`)) return;
+    state.hands.pop(); save(); renderGame();
+  };
+
+  // Scorecard: rows = hands, cols = players. Every cell is an edit button.
+  function renderTable(table) {
+    let html = '<thead><tr><th>#</th>' + state.players.map(p => `<th>${esc(p)}</th>`).join('') + '</tr></thead><tbody>';
+    state.hands.forEach((hand, h) => {
+      const before = stats(h);
+      html += `<tr><td class="r">${h + 1}</td>`;
+      hand.forEach((e, p) => {
+        const ph = before[p].done + 1;
+        const label = ph > 10 ? 'done' : `P${ph} ${e.made ? '✓' : '✗'}`;
+        html += `<td><button type="button" class="score-btn ${e.made ? 'made' : ''}" data-h="${h}" data-p="${p}"
+          aria-label="Edit ${esc(state.players[p])}, hand ${h + 1}"><span class="pts">${e.pts}</span><span class="ph">${label}</span></button></td>`;
+      });
+      html += '</tr>';
+    });
+    if (!state.hands.length) html += `<tr><td colspan="${state.players.length + 1}" class="muted">No hands yet</td></tr>`;
+    html += '</tbody>';
+    if (state.hands.length) {
+      const st = stats();
+      html += '<tfoot><tr><td class="r">Σ</td>' + st.map(s => `<td>${s.pts}</td>`).join('') + '</tr></tfoot>';
+    }
+    table.innerHTML = html;
+    table.querySelectorAll('.score-btn').forEach(b => b.onclick = () => openEdit(+b.dataset.h, +b.dataset.p));
+  }
+
+  // ---------- Edit ----------
+  function syncMade() { $('editMadeLabel').classList.toggle('on', $('editMade').checked); }
+  $('editMade').onchange = syncMade;
+  function openEdit(h, p) {
+    editing = { h, p };
+    const e = state.hands[h][p];
+    const ph = stats(h)[p].done + 1;
+    $('editTitle').textContent = `${state.players[p]} · Hand ${h + 1}`;
+    $('editPhaseNum').textContent = ph <= 10 ? ph : '';
+    $('editScore').value = e.pts;
+    $('editMade').checked = e.made;
+    $('editMade').disabled = ph > 10 && !e.made;
+    syncMade();
+    $('editDialog').showModal();
+    $('editScore').select();
+  }
+  $('editCancel').onclick = () => $('editDialog').close();
+  $('editForm').addEventListener('submit', ev => {
+    const v = parseInt($('editScore').value, 10);
+    if (isNaN(v) || v < 0) { ev.preventDefault(); $('editScore').focus(); return; }
+    state.hands[editing.h][editing.p] = { pts: v, made: $('editMade').checked };
+    save(); render();
+    document.querySelectorAll(`.score-btn[data-h="${editing.h}"][data-p="${editing.p}"]`).forEach(b => b.classList.add('flash'));
+  });
+
+  // ---------- Results ----------
+  $('totalBtn').onclick = () => { state.phase = 'results'; save(); render(); window.scrollTo(0, 0); };
+  $('backBtn').onclick = () => { state.phase = 'game'; save(); render(); };
+
+  function renderResults() {
+    const st = stats();
+    // Furthest phase completed wins; ties broken by lowest score.
+    const order = state.players.map((p, i) => ({ p, ...st[i] }))
+      .sort((a, b) => b.done - a.done || a.pts - b.pts);
+    const key = o => `${o.done}|${o.pts}`;
+    let place = 0, prev = null;
+    $('standings').innerHTML = order.map((o, k) => {
+      if (key(o) !== prev) place = k + 1;
+      prev = key(o);
+      const first = place === 1;
+      return `<div class="standing ${first ? 'first' : ''}">
+        <div class="place">${place}</div>
+        <div class="grow"><div><strong>${esc(o.p)}</strong>${first ? ' 🏆' : ''}</div>
+        <div class="muted">${o.done >= 10 ? 'Completed all 10 phases' : `Completed ${o.done} phase${o.done === 1 ? '' : 's'} · on Phase ${o.done + 1}`}</div></div>
+        <div class="pts">${o.pts}<small>points</small></div></div>`;
+    }).join('');
+    renderTable($('resultsTable'));
+  }
+
+  // ---------- New game ----------
+  function newGame() {
+    if (state.hands.length && !confirm('Start a new game? Current scores will be cleared.')) return;
+    const players = state.players.slice();
+    state = freshState();
+    state.players = players.length ? players : ['', ''];
+    save(); render();
+  }
+  $('newGameBtn').onclick = newGame;
+  $('newGameBtn2').onclick = newGame;
+
+  function render() {
+    ['setup', 'game', 'results'].forEach(s => $(s).classList.toggle('hidden', state.phase !== s));
+    $('newGameBtn').classList.toggle('hidden', state.phase === 'setup');
+    if (state.phase === 'setup') renderSetup();
+    if (state.phase === 'game') renderGame();
+    if (state.phase === 'results') renderResults();
+  }
+  render();
+})();
+</script>
+</body>
+</html>
